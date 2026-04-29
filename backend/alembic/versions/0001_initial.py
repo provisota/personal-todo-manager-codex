@@ -51,7 +51,12 @@ def upgrade() -> None:
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
     )
     op.create_index("ix_project_lists_user_id", "project_lists", ["user_id"])
-    op.create_index("ix_project_lists_user_lower_name", "project_lists", ["user_id", "name"], unique=True)
+    op.create_index(
+        "ix_project_lists_user_lower_name",
+        "project_lists",
+        ["user_id", sa.text("lower(name)")],
+        unique=True,
+    )
 
     op.create_table(
         "tasks",
@@ -98,4 +103,3 @@ def downgrade() -> None:
     op.drop_table("project_lists")
     op.drop_table("oauth_identities")
     op.drop_table("users")
-

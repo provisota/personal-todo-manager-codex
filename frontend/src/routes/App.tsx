@@ -18,9 +18,9 @@ export function App() {
   return (
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/app" replace /> : <LoginPage />} />
+      <Route path="/app/lists/:listId" element={user ? <TodoAppPage /> : <Navigate to="/login" replace />} />
       <Route path="/app/*" element={user ? <TodoAppPage /> : <Navigate to="/login" replace />} />
       <Route path="*" element={<Navigate to={user ? '/app' : '/login'} replace />} />
     </Routes>
   );
 }
-

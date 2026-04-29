@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Menu } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import { api } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
@@ -11,8 +12,13 @@ import type { ProjectList } from '../types/domain';
 
 export function TodoAppPage() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const { listId } = useParams();
   const [lists, setLists] = useState<ProjectList[]>([]);
-  const [selectedListId, setSelectedListId] = useState<string | null>(() => localStorage.getItem('selected-list-id'));
+  const [selectedListId, setSelectedListId] = useState<string | null>(
+    () => listId ?? localStorage.getItem('selected-list-id')
+  );
+  const [focusedTaskId, setFocusedTaskId] = useState<string | null>(null);
   const [loadingLists, setLoadingLists] = useState(true);
   const [listsLoaded, setListsLoaded] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -23,19 +29,37 @@ export function TodoAppPage() {
     [lists, selectedListId]
   );
 
+  useEffect(() => {
+    if (listId) {
+      setSelectedListId(listId);
+      localStorage.setItem('selected-list-id', listId);
+    }
+  }, [listId]);
+
   const loadLists = useCallback(async () => {
     setLoadingLists(true);
     try {
       const result = await api.lists();
       setLists(result);
       setListsLoaded(true);
-      if (result.length && (!selectedListId || !result.some((item) => item.id === selectedListId))) {
-        setSelectedListId(result[0].id);
-        localStorage.setItem('selected-list-id', result[0].id);
+      const requestedListId = listId ?? selectedListId;
+      if (result.length) {
+        const nextListId =
+          requestedListId && result.some((item) => item.id === requestedListId)
+            ? requestedListId
+            : result[0].id;
+        setSelectedListId(nextListId);
+        localStorage.setItem('selected-list-id', nextListId);
+        if (listId !== nextListId) {
+          navigate(`/app/lists/${nextListId}`, { replace: !listId });
+        }
       }
       if (!result.length) {
         setSelectedListId(null);
         localStorage.removeItem('selected-list-id');
+        if (listId) {
+          navigate('/app', { replace: true });
+        }
       }
     } catch (err) {
       setListsLoaded(false);
@@ -43,7 +67,7 @@ export function TodoAppPage() {
     } finally {
       setLoadingLists(false);
     }
-  }, [selectedListId]);
+  }, [listId, navigate, selectedListId]);
 
   useEffect(() => {
     void loadLists();
@@ -53,7 +77,17 @@ export function TodoAppPage() {
     setSelectedListId(id);
     localStorage.setItem('selected-list-id', id);
     setSidebarOpen(false);
+    navigate(`/app/lists/${id}`);
   };
+
+  const navigateToNotification = (listId: string, taskId: string) => {
+    setFocusedTaskId(taskId);
+    selectList(listId);
+  };
+
+  const clearFocusedTask = useCallback(() => {
+    setFocusedTaskId(null);
+  }, []);
 
   return (
     <main className="app-shell">
@@ -71,12 +105,18 @@ export function TodoAppPage() {
         onChanged={loadLists}
         onLogout={logout}
       />
-      <TaskBoard lists={lists} selectedList={selectedList} onTasksChanged={loadLists} />
+      <TaskBoard
+        lists={lists}
+        selectedList={selectedList}
+        focusedTaskId={focusedTaskId}
+        onFocusHandled={clearFocusedTask}
+        onTasksChanged={loadLists}
+      />
       <NotificationPanel
         connected={notifications.connected}
         items={notifications.items}
         onAck={notifications.ack}
-        onNavigate={(listId) => selectList(listId)}
+        onNavigate={navigateToNotification}
       />
     </main>
   );

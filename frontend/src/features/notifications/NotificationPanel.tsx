@@ -6,7 +6,7 @@ interface Props {
   connected: boolean;
   items: NotificationItem[];
   onAck: (id: string) => void;
-  onNavigate: (listId: string) => void;
+  onNavigate: (listId: string, taskId: string) => void;
 }
 
 export function NotificationPanel({ connected, items, onAck, onNavigate }: Props) {
@@ -23,7 +23,11 @@ export function NotificationPanel({ connected, items, onAck, onNavigate }: Props
       <div className="notification-list">
         {items.map((item) => (
           <article className={`notification ${item.type}`} key={item.id}>
-            <button className="notification-body" type="button" onClick={() => onNavigate(item.list_id)}>
+            <button
+              className="notification-body"
+              type="button"
+              onClick={() => onNavigate(item.list_id, item.task_id)}
+            >
               <TriangleAlert size={18} />
               <span>
                 <strong>{item.title}</strong>
@@ -39,4 +43,3 @@ export function NotificationPanel({ connected, items, onAck, onNavigate }: Props
     </aside>
   );
 }
-

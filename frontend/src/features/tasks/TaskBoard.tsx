@@ -8,6 +8,8 @@ import { TaskForm, type TaskFormValue } from './TaskForm';
 interface Props {
   lists: ProjectList[];
   selectedList: ProjectList | null;
+  focusedTaskId?: string | null;
+  onFocusHandled?: () => void;
   onTasksChanged: () => Promise<void>;
 }
 
@@ -25,9 +27,16 @@ const priorityLabels: Record<TaskPriority, string> = {
   high: 'High'
 };
 
-export function TaskBoard({ lists, selectedList, onTasksChanged }: Props) {
+export function TaskBoard({
+  lists,
+  selectedList,
+  focusedTaskId,
+  onFocusHandled,
+  onTasksChanged
+}: Props) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [filters, setFilters] = useState<TaskFilters>(defaultFilters);
+  const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formTask, setFormTask] = useState<Task | null>(null);
@@ -52,6 +61,27 @@ export function TaskBoard({ lists, selectedList, onTasksChanged }: Props) {
   useEffect(() => {
     void loadTasks();
   }, [loadTasks]);
+
+  useEffect(() => {
+    if (focusedTaskId) {
+      setFilters(defaultFilters);
+    }
+  }, [focusedTaskId]);
+
+  useEffect(() => {
+    if (!focusedTaskId || loading) {
+      return undefined;
+    }
+    const taskElement = document.getElementById(`task-${focusedTaskId}`);
+    if (!taskElement) {
+      return undefined;
+    }
+    taskElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setHighlightedTaskId(focusedTaskId);
+    onFocusHandled?.();
+    const timeout = window.setTimeout(() => setHighlightedTaskId(null), 2600);
+    return () => window.clearTimeout(timeout);
+  }, [focusedTaskId, loading, onFocusHandled, tasks]);
 
   const hasActiveFilters = useMemo(
     () => Boolean(filters.search || filters.status || filters.priority || filters.due !== 'all'),
@@ -147,7 +177,11 @@ export function TaskBoard({ lists, selectedList, onTasksChanged }: Props) {
 
       <div className="task-list">
         {tasks.map((task) => (
-          <article className={`task-card priority-${task.priority}`} key={task.id}>
+          <article
+            className={`task-card priority-${task.priority} ${task.id === highlightedTaskId ? 'highlighted' : ''}`}
+            id={`task-${task.id}`}
+            key={task.id}
+          >
             <div className="task-status-icon" aria-hidden="true">
               {task.status === 'done' ? <CheckCircle2 size={22} /> : task.status === 'in_progress' ? <Clock3 size={22} /> : <Circle size={22} />}
             </div>
@@ -195,4 +229,3 @@ export function TaskBoard({ lists, selectedList, onTasksChanged }: Props) {
     </section>
   );
 }
-

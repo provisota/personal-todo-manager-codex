@@ -1,16 +1,22 @@
 import pytest
+from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.pool import StaticPool
 
 from app.core.config import Settings, get_settings
-from app.db.session import get_session
+from app.db.session import get_session, get_session_factory
 from app.main import create_app
 from app.models.base import Base
 
 
 @pytest.fixture
-async def client():
-    engine = create_async_engine("sqlite+aiosqlite:///:memory:", connect_args={"check_same_thread": False})
+async def app():
+    engine = create_async_engine(
+        "sqlite+aiosqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -30,17 +36,23 @@ async def client():
 
     app = create_app()
     app.dependency_overrides[get_session] = override_session
+    app.dependency_overrides[get_session_factory] = lambda: session_factory
     app.dependency_overrides[get_settings] = override_settings
 
+    yield app
+
+    app.dependency_overrides.clear()
+    await engine.dispose()
+
+
+@pytest.fixture
+async def client(app: FastAPI):
     async with AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://testserver",
     ) as test_client:
         test_client.app = app  # type: ignore[attr-defined]
         yield test_client
-
-    app.dependency_overrides.clear()
-    await engine.dispose()
 
 
 async def login(client: AsyncClient, provider_user_id: str = "user-1", email: str = "u1@example.com"):
