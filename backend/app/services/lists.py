@@ -44,6 +44,31 @@ async def get_user_list(session: AsyncSession, user_id: str, list_id: str) -> Pr
     return project_list
 
 
+async def read_user_list(session: AsyncSession, user_id: str, list_id: str) -> ListRead:
+    stmt = (
+        select(
+            ProjectList,
+            func.count(Task.id).label("task_count"),
+            func.count(Task.id).filter(Task.status != "done").label("open_task_count"),
+        )
+        .outerjoin(Task, Task.list_id == ProjectList.id)
+        .where(ProjectList.user_id == user_id, ProjectList.id == list_id)
+        .group_by(ProjectList.id)
+    )
+    row = (await session.execute(stmt)).one_or_none()
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="List not found")
+    project_list, task_count, open_task_count = row
+    return ListRead(
+        id=project_list.id,
+        name=project_list.name,
+        task_count=task_count,
+        open_task_count=open_task_count,
+        created_at=project_list.created_at,
+        updated_at=project_list.updated_at,
+    )
+
+
 async def create_list(session: AsyncSession, user_id: str, payload: ListCreate) -> ProjectList:
     await _ensure_unique_name(session, user_id, payload.name)
     project_list = ProjectList(user_id=user_id, name=payload.name)
@@ -52,7 +77,10 @@ async def create_list(session: AsyncSession, user_id: str, payload: ListCreate) 
         await session.commit()
     except IntegrityError as exc:
         await session.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="List already exists") from exc
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="List already exists",
+        ) from exc
     await session.refresh(project_list)
     return project_list
 
@@ -67,7 +95,10 @@ async def rename_list(
         await session.commit()
     except IntegrityError as exc:
         await session.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="List already exists") from exc
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="List already exists",
+        ) from exc
     await session.refresh(project_list)
     return project_list
 

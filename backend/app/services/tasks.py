@@ -53,7 +53,7 @@ async def list_tasks(
     elif due == "next_7_days":
         stmt = stmt.where(Task.due_date >= today, Task.due_date <= today + timedelta(days=7))
     elif due != "all":
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid due filter")
+        raise HTTPException(status_code=422, detail="Invalid due filter")
     stmt = stmt.order_by(Task.due_date.is_(None), Task.due_date, Task.created_at.desc())
     return list((await session.execute(stmt)).scalars().all())
 
@@ -85,7 +85,9 @@ def _apply_status_transition(task: Task, next_status: TaskStatus) -> None:
     task.status = next_status.value
 
 
-async def update_task(session: AsyncSession, user_id: str, task_id: str, payload: TaskUpdate) -> Task:
+async def update_task(
+    session: AsyncSession, user_id: str, task_id: str, payload: TaskUpdate
+) -> Task:
     task = await get_user_task(session, user_id, task_id)
     data = payload.model_dump(exclude_unset=True)
     if "list_id" in data and data["list_id"] is not None and data["list_id"] != task.list_id:
@@ -120,4 +122,3 @@ async def delete_task(session: AsyncSession, user_id: str, task_id: str) -> None
     task = await get_user_task(session, user_id, task_id)
     await session.delete(task)
     await session.commit()
-

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, String
+from sqlalchemy import DateTime, String, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, new_uuid
@@ -9,7 +9,7 @@ from app.models.base import Base, TimestampMixin, new_uuid
 class User(TimestampMixin, Base):
     __tablename__ = "users"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True, default=new_uuid)
     email: Mapped[str | None] = mapped_column(String(320), index=True)
     display_name: Mapped[str] = mapped_column(String(200))
     avatar_url: Mapped[str | None] = mapped_column(String(1000))
@@ -18,4 +18,3 @@ class User(TimestampMixin, Base):
     identities = relationship("OAuthIdentity", back_populates="user", cascade="all, delete-orphan")
     lists = relationship("ProjectList", back_populates="user", cascade="all, delete-orphan")
     tasks = relationship("Task", back_populates="user", cascade="all, delete-orphan")
-

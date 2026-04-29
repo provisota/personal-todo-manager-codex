@@ -1,7 +1,7 @@
 import enum
 from datetime import date, datetime
 
-from sqlalchemy import CheckConstraint, Date, DateTime, ForeignKey, Index, String, Text
+from sqlalchemy import CheckConstraint, Date, DateTime, ForeignKey, Index, String, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, new_uuid
@@ -31,9 +31,13 @@ class Task(TimestampMixin, Base):
         Index("ix_tasks_user_due_date", "user_id", "due_date"),
     )
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
-    list_id: Mapped[str] = mapped_column(ForeignKey("project_lists.id", ondelete="CASCADE"), index=True)
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True, default=new_uuid)
+    user_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    list_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("project_lists.id", ondelete="CASCADE"), index=True
+    )
     title: Mapped[str] = mapped_column(String(200))
     description: Mapped[str] = mapped_column(Text, default="")
     status: Mapped[str] = mapped_column(String(30), default=TaskStatus.todo.value)
@@ -43,4 +47,3 @@ class Task(TimestampMixin, Base):
 
     user = relationship("User", back_populates="tasks")
     list = relationship("ProjectList", back_populates="tasks")
-

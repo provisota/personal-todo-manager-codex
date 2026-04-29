@@ -13,12 +13,19 @@ from app.core.security import (
     clear_session_cookie,
     create_oauth_state,
     parse_oauth_state,
+    safe_redirect_path,
     set_session_cookie,
 )
 from app.db.session import get_session
 from app.models.user import User
 from app.repositories.auth import upsert_user_from_profile
-from app.schemas.auth import AuthProvidersRead, OkResponse, ProviderProfile, TestLoginRequest, UserRead
+from app.schemas.auth import (
+    AuthProvidersRead,
+    OkResponse,
+    ProviderProfile,
+    TestLoginRequest,
+    UserRead,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -34,7 +41,9 @@ async def me(current_user: Annotated[User, Depends(get_current_user)]) -> UserRe
 
 
 @router.post("/logout", response_model=OkResponse)
-async def logout(response: Response, settings: Annotated[Settings, Depends(get_settings)]) -> OkResponse:
+async def logout(
+    response: Response, settings: Annotated[Settings, Depends(get_settings)]
+) -> OkResponse:
     clear_session_cookie(response, settings)
     return OkResponse()
 
@@ -49,11 +58,18 @@ async def providers(settings: Annotated[Settings, Depends(get_settings)]) -> Aut
 
 
 @router.get("/{provider}/login")
-async def oauth_login(provider: str, settings: Annotated[Settings, Depends(get_settings)]):
+async def oauth_login(
+    provider: str,
+    settings: Annotated[Settings, Depends(get_settings)],
+    redirect_path: Annotated[str | None, Query(alias="next")] = None,
+):
     if provider not in {"google", "github"}:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider not found")
-    state = create_oauth_state(provider, settings)
-    response = RedirectResponse(_provider_authorize_url(provider, state, settings))
+    state = create_oauth_state(provider, settings, redirect_path)
+    state_payload = parse_oauth_state(state, provider, settings)
+    response = RedirectResponse(
+        _provider_authorize_url(provider, state, state_payload["nonce"], settings)
+    )
     response.set_cookie(
         OAUTH_STATE_COOKIE_NAME,
         state,
@@ -75,23 +91,31 @@ async def oauth_callback(
     settings: Annotated[Settings, Depends(get_settings)],
     code: Annotated[str | None, Query()] = None,
     state: Annotated[str | None, Query()] = None,
+    error: Annotated[str | None, Query()] = None,
 ):
     if provider not in {"google", "github"}:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider not found")
+    if error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"OAuth error: {error}")
     if not code or not state:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OAuth callback missing code")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="OAuth callback missing code",
+        )
     cookie_state = request.cookies.get(OAUTH_STATE_COOKIE_NAME)
     if not cookie_state or cookie_state != state:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OAuth state mismatch")
-    parse_oauth_state(state, provider, settings)
+    state_payload = parse_oauth_state(state, provider, settings)
 
     profile = (
-        await exchange_google_code(code, settings)
+        await exchange_google_code(code, settings, state_payload["nonce"])
         if provider == "google"
         else await exchange_github_code(code, settings)
     )
     user = await upsert_user_from_profile(session, profile)
-    response = RedirectResponse(f"{settings.frontend_base_url}/app")
+    response = RedirectResponse(
+        f"{settings.frontend_base_url}{safe_redirect_path(state_payload.get('redirect_path'))}"
+    )
     response.delete_cookie(OAUTH_STATE_COOKIE_NAME, domain=settings.cookie_domain, path="/")
     set_session_cookie(response, user.id, settings)
     return response
@@ -116,7 +140,7 @@ async def test_login(
     )
 
 
-def _provider_authorize_url(provider: str, state: str, settings: Settings) -> str:
+def _provider_authorize_url(provider: str, state: str, nonce: str, settings: Settings) -> str:
     if provider == "google":
         if not settings.google_client_id:
             raise HTTPException(status_code=500, detail="Google OAuth is not configured")
@@ -128,6 +152,7 @@ def _provider_authorize_url(provider: str, state: str, settings: Settings) -> st
                 "response_type": "code",
                 "scope": "openid email profile",
                 "state": state,
+                "nonce": nonce,
                 "access_type": "offline",
                 "prompt": "consent",
             },

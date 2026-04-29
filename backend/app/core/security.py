@@ -39,14 +39,20 @@ def parse_signed_token(token: str, secret: str) -> dict[str, Any]:
     try:
         body, signature = token.split(".", 1)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session") from exc
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid session",
+        ) from exc
     expected = _sign(body, secret)
     if not hmac.compare_digest(signature, expected):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session")
     try:
         payload = json.loads(_b64decode(body))
     except (json.JSONDecodeError, ValueError) as exc:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session") from exc
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid session",
+        ) from exc
     if int(payload.get("exp", 0)) < int(time.time()):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session expired")
     return payload
@@ -75,9 +81,19 @@ def clear_session_cookie(response: Response, settings: Settings) -> None:
     )
 
 
-def create_oauth_state(provider: str, settings: Settings) -> str:
+def safe_redirect_path(value: str | None) -> str:
+    if not value or not value.startswith("/") or value.startswith("//"):
+        return "/app"
+    return value
+
+
+def create_oauth_state(provider: str, settings: Settings, redirect_path: str | None = None) -> str:
     return create_signed_token(
-        {"provider": provider, "nonce": secrets.token_urlsafe(16)},
+        {
+            "provider": provider,
+            "nonce": secrets.token_urlsafe(16),
+            "redirect_path": safe_redirect_path(redirect_path),
+        },
         settings.session_secret,
         ttl_seconds=10 * 60,
     )
@@ -92,4 +108,3 @@ def parse_oauth_state(token: str, provider: str, settings: Settings) -> dict[str
 
 def build_url(base: str, params: dict[str, str]) -> str:
     return f"{base}?{urlencode(params)}"
-

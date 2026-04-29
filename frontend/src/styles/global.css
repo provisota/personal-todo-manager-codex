@@ -548,6 +548,11 @@ textarea {
   margin-top: 3px;
 }
 
+.notification-body .pill {
+  display: inline-flex;
+  margin-top: 6px;
+}
+
 .modal-backdrop,
 .sidebar-backdrop {
   position: fixed;

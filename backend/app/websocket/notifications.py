@@ -1,4 +1,6 @@
 import asyncio
+import contextlib
+import json
 from datetime import UTC, datetime
 from json import JSONDecodeError
 from typing import Annotated
@@ -39,19 +41,28 @@ async def notifications_socket(
         return
 
     await websocket.accept()
-    prefs = SubscribePayload(interval_seconds=settings.ws_notification_interval_seconds)
+    prefs_ref = {
+        "value": SubscribePayload(interval_seconds=settings.ws_notification_interval_seconds),
+    }
+    send_lock = asyncio.Lock()
     async with session_factory() as session:
-        await _send_batch(websocket, session, user.id, prefs)
+        await _send_batch(websocket, session, user.id, prefs_ref["value"], send_lock)
 
-    while True:
-        try:
-            raw = await asyncio.wait_for(websocket.receive_text(), timeout=prefs.interval_seconds)
-            prefs = await _handle_client_message(websocket, session_factory, user.id, raw, prefs)
-        except TimeoutError:
-            async with session_factory() as session:
-                await _send_batch(websocket, session, user.id, prefs)
-        except WebSocketDisconnect:
-            return
+    receiver = asyncio.create_task(
+        _receive_messages(websocket, session_factory, user.id, prefs_ref, send_lock)
+    )
+    periodic = asyncio.create_task(
+        _send_periodic_batches(websocket, session_factory, user.id, prefs_ref, send_lock)
+    )
+    done, pending = await asyncio.wait({receiver, periodic}, return_when=asyncio.FIRST_COMPLETED)
+    for task in pending:
+        task.cancel()
+    for task in pending:
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
+    for task in done:
+        with contextlib.suppress(WebSocketDisconnect):
+            task.result()
 
 
 async def _authenticate_websocket(
@@ -73,6 +84,7 @@ async def _send_batch(
     session: AsyncSession,
     user_id: str,
     prefs: SubscribePayload,
+    send_lock: asyncio.Lock,
 ) -> None:
     notifications = await NotificationService().get_notifications(
         session,
@@ -86,7 +98,39 @@ async def _send_batch(
             notifications=notifications,
         )
     )
-    await websocket.send_json(message.model_dump(mode="json"))
+    await _send_json(websocket, message.model_dump(mode="json"), send_lock)
+
+
+async def _send_json(websocket: WebSocket, payload: dict, send_lock: asyncio.Lock) -> None:
+    async with send_lock:
+        await websocket.send_json(payload)
+
+
+async def _send_periodic_batches(
+    websocket: WebSocket,
+    session_factory: SessionFactory,
+    user_id: str,
+    prefs_ref: dict[str, SubscribePayload],
+    send_lock: asyncio.Lock,
+) -> None:
+    while True:
+        await asyncio.sleep(prefs_ref["value"].interval_seconds)
+        async with session_factory() as session:
+            await _send_batch(websocket, session, user_id, prefs_ref["value"], send_lock)
+
+
+async def _receive_messages(
+    websocket: WebSocket,
+    session_factory: SessionFactory,
+    user_id: str,
+    prefs_ref: dict[str, SubscribePayload],
+    send_lock: asyncio.Lock,
+) -> None:
+    while True:
+        raw = await websocket.receive_text()
+        prefs_ref["value"] = await _handle_client_message(
+            websocket, session_factory, user_id, raw, prefs_ref["value"], send_lock
+        )
 
 
 async def _handle_client_message(
@@ -95,26 +139,37 @@ async def _handle_client_message(
     user_id: str,
     raw: str,
     prefs: SubscribePayload,
+    send_lock: asyncio.Lock,
 ) -> SubscribePayload:
     try:
-        if '"type":"subscribe"' in raw.replace(" ", ""):
+        envelope = json.loads(raw)
+        message_type = envelope.get("type") if isinstance(envelope, dict) else None
+        if message_type == "subscribe":
             message = SubscribeMessage.model_validate_json(raw)
             return message.payload
-        if '"type":"ack"' in raw.replace(" ", ""):
+        if message_type == "ack":
             message = AckMessage.model_validate_json(raw)
             async with session_factory() as session:
-                await NotificationService().acknowledge(session, user_id, message.payload.notification_id)
-            await websocket.send_json(
+                await NotificationService().acknowledge(
+                    session,
+                    user_id,
+                    message.payload.notification_id,
+                )
+            await _send_json(
+                websocket,
                 AckOkMessage(
                     payload=AckOkPayload(notification_id=message.payload.notification_id)
-                ).model_dump(mode="json")
+                ).model_dump(mode="json"),
+                send_lock,
             )
             return prefs
         raise ValueError("Unsupported WebSocket message type")
     except (ValidationError, JSONDecodeError, ValueError) as exc:
-        await websocket.send_json(
+        await _send_json(
+            websocket,
             ErrorMessage(
                 payload=ErrorPayload(code="invalid_message", message=str(exc))
-            ).model_dump(mode="json")
+            ).model_dump(mode="json"),
+            send_lock,
         )
         return prefs

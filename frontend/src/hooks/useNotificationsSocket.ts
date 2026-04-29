@@ -34,6 +34,15 @@ export function useNotificationsSocket(enabled: boolean) {
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<number | null>(null);
   const reconnectDelayRef = useRef(1000);
+  const pendingAckIdsRef = useRef<Set<string>>(new Set());
+
+  const sendAck = useCallback((socket: WebSocket, notificationId: string) => {
+    socket.send(JSON.stringify({ type: 'ack', payload: { notification_id: notificationId } }));
+  }, []);
+
+  const flushPendingAcks = useCallback((socket: WebSocket) => {
+    pendingAckIdsRef.current.forEach((notificationId) => sendAck(socket, notificationId));
+  }, [sendAck]);
 
   const connect = useCallback(() => {
     if (!enabled || socketRef.current) return;
@@ -53,14 +62,23 @@ export function useNotificationsSocket(enabled: boolean) {
           }
         })
       );
+      flushPendingAcks(socket);
     };
 
     socket.onmessage = (event) => {
-      const message = JSON.parse(event.data) as ServerMessage;
+      let message: ServerMessage;
+      try {
+        message = JSON.parse(event.data) as ServerMessage;
+      } catch {
+        return;
+      }
       if (message.type === 'notification_batch') {
-        setItems(message.payload.notifications);
+        setItems(
+          message.payload.notifications.filter((item) => !pendingAckIdsRef.current.has(item.id))
+        );
       }
       if (message.type === 'ack_ok') {
+        pendingAckIdsRef.current.delete(message.payload.notification_id);
         setItems((current) => current.filter((item) => item.id !== message.payload.notification_id));
       }
     };
@@ -73,7 +91,7 @@ export function useNotificationsSocket(enabled: boolean) {
         reconnectDelayRef.current = Math.min(reconnectDelayRef.current * 2, 30000);
       }
     };
-  }, [enabled]);
+  }, [enabled, flushPendingAcks]);
 
   useEffect(() => {
     connect();
@@ -87,14 +105,14 @@ export function useNotificationsSocket(enabled: boolean) {
   }, [connect]);
 
   const ack = useCallback((notificationId: string) => {
+    pendingAckIdsRef.current.add(notificationId);
+    setItems((current) => current.filter((item) => item.id !== notificationId));
     const socket = socketRef.current;
     if (!socket || socket.readyState !== WebSocket.OPEN) {
-      setItems((current) => current.filter((item) => item.id !== notificationId));
       return;
     }
-    socket.send(JSON.stringify({ type: 'ack', payload: { notification_id: notificationId } }));
-  }, []);
+    sendAck(socket, notificationId);
+  }, [sendAck]);
 
   return { connected, items, ack };
 }
-

@@ -7,7 +7,13 @@ from app.api.deps import get_current_user
 from app.db.session import get_session
 from app.models.user import User
 from app.schemas.lists import ListCreate, ListDeleteResponse, ListRead, ListUpdate
-from app.services.lists import create_list, delete_list, list_user_lists, rename_list
+from app.services.lists import (
+    create_list,
+    delete_list,
+    list_user_lists,
+    read_user_list,
+    rename_list,
+)
 
 router = APIRouter(prefix="/api/lists", tags=["lists"])
 
@@ -45,14 +51,7 @@ async def update_project_list(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> ListRead:
     project_list = await rename_list(session, current_user.id, list_id, payload)
-    return ListRead(
-        id=project_list.id,
-        name=project_list.name,
-        task_count=0,
-        open_task_count=0,
-        created_at=project_list.created_at,
-        updated_at=project_list.updated_at,
-    )
+    return await read_user_list(session, current_user.id, project_list.id)
 
 
 @router.delete("/{list_id}", response_model=ListDeleteResponse)
@@ -63,4 +62,3 @@ async def remove_project_list(
 ) -> ListDeleteResponse:
     deleted_tasks = await delete_list(session, current_user.id, list_id)
     return ListDeleteResponse(deleted_tasks=deleted_tasks)
-

@@ -32,7 +32,11 @@ class NotificationService:
         return notifications
 
     async def _query_type(
-        self, session: AsyncSession, user_id: str, notification_type: str, include_acknowledged: bool
+        self,
+        session: AsyncSession,
+        user_id: str,
+        notification_type: str,
+        include_acknowledged: bool,
     ) -> list[NotificationRead]:
         stmt = select(Task).where(Task.user_id == user_id, Task.status != TaskStatus.done.value)
         if notification_type == "overdue":
@@ -71,7 +75,9 @@ class NotificationService:
             raise ValueError("Invalid notification id") from exc
         if notification_type not in {"overdue", "due_soon"}:
             raise ValueError("Invalid notification type")
-        result = await session.execute(select(Task).where(Task.id == task_id, Task.user_id == user_id))
+        result = await session.execute(
+            select(Task).where(Task.id == task_id, Task.user_id == user_id)
+        )
         if not result.scalar_one_or_none():
             raise ValueError("Task not found")
         existing = await session.execute(

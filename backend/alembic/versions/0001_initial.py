@@ -16,7 +16,7 @@ depends_on = None
 def upgrade() -> None:
     op.create_table(
         "users",
-        sa.Column("id", sa.String(length=36), primary_key=True),
+        sa.Column("id", sa.Uuid(), primary_key=True),
         sa.Column("email", sa.String(length=320), nullable=True),
         sa.Column("display_name", sa.String(length=200), nullable=False),
         sa.Column("avatar_url", sa.String(length=1000), nullable=True),
@@ -28,8 +28,13 @@ def upgrade() -> None:
 
     op.create_table(
         "oauth_identities",
-        sa.Column("id", sa.String(length=36), primary_key=True),
-        sa.Column("user_id", sa.String(length=36), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
+        sa.Column("id", sa.Uuid(), primary_key=True),
+        sa.Column(
+            "user_id",
+            sa.Uuid(),
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("provider", sa.String(length=30), nullable=False),
         sa.Column("provider_user_id", sa.String(length=200), nullable=False),
         sa.Column("email", sa.String(length=320), nullable=True),
@@ -43,8 +48,13 @@ def upgrade() -> None:
 
     op.create_table(
         "project_lists",
-        sa.Column("id", sa.String(length=36), primary_key=True),
-        sa.Column("user_id", sa.String(length=36), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
+        sa.Column("id", sa.Uuid(), primary_key=True),
+        sa.Column(
+            "user_id",
+            sa.Uuid(),
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("name", sa.String(length=100), nullable=False),
         sa.Column("sort_order", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
@@ -60,9 +70,19 @@ def upgrade() -> None:
 
     op.create_table(
         "tasks",
-        sa.Column("id", sa.String(length=36), primary_key=True),
-        sa.Column("user_id", sa.String(length=36), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("list_id", sa.String(length=36), sa.ForeignKey("project_lists.id", ondelete="CASCADE"), nullable=False),
+        sa.Column("id", sa.Uuid(), primary_key=True),
+        sa.Column(
+            "user_id",
+            sa.Uuid(),
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+        sa.Column(
+            "list_id",
+            sa.Uuid(),
+            sa.ForeignKey("project_lists.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("title", sa.String(length=200), nullable=False),
         sa.Column("description", sa.Text(), nullable=False),
         sa.Column("status", sa.String(length=30), nullable=False),
@@ -84,9 +104,19 @@ def upgrade() -> None:
 
     op.create_table(
         "notification_acks",
-        sa.Column("id", sa.String(length=36), primary_key=True),
-        sa.Column("user_id", sa.String(length=36), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("task_id", sa.String(length=36), sa.ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False),
+        sa.Column("id", sa.Uuid(), primary_key=True),
+        sa.Column(
+            "user_id",
+            sa.Uuid(),
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+        sa.Column(
+            "task_id",
+            sa.Uuid(),
+            sa.ForeignKey("tasks.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("notification_type", sa.String(length=30), nullable=False),
         sa.Column("acknowledged_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),

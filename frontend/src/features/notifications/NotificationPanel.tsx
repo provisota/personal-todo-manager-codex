@@ -9,6 +9,12 @@ interface Props {
   onNavigate: (listId: string, taskId: string) => void;
 }
 
+const priorityLabels = {
+  low: 'Low',
+  medium: 'Medium',
+  high: 'High'
+};
+
 export function NotificationPanel({ connected, items, onAck, onNavigate }: Props) {
   return (
     <aside className="notification-panel" aria-label="Task notifications">
@@ -32,9 +38,17 @@ export function NotificationPanel({ connected, items, onAck, onNavigate }: Props
               <span>
                 <strong>{item.title}</strong>
                 <small>{item.message}{item.due_date ? ` - due ${item.due_date}` : ''}</small>
+                <span className={`pill priority ${item.priority}`}>
+                  {priorityLabels[item.priority]} priority
+                </span>
               </span>
             </button>
-            <button className="icon-button" type="button" aria-label={`Acknowledge ${item.title}`} onClick={() => onAck(item.id)}>
+            <button
+              className="icon-button"
+              type="button"
+              aria-label={`Acknowledge ${item.title}`}
+              onClick={() => onAck(item.id)}
+            >
               <Check size={16} />
             </button>
           </article>

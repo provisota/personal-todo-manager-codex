@@ -55,7 +55,11 @@ async def client(app: FastAPI):
         yield test_client
 
 
-async def login(client: AsyncClient, provider_user_id: str = "user-1", email: str = "u1@example.com"):
+async def login(
+    client: AsyncClient,
+    provider_user_id: str = "user-1",
+    email: str = "u1@example.com",
+):
     response = await client.post(
         "/auth/test-login",
         json={
