@@ -66,3 +66,12 @@ docker compose exec backend alembic upgrade head
 **Migrations**: models must be imported in `alembic/env.py` (via `app.models.base`) for autogenerate to detect changes.
 
 **Local demo login**: set `TEST_AUTH_ENABLED=true` in `backend/.env` to enable the "Use local demo login" button. Never enable in production.
+
+## Agents
+
+**check-migration** — spawn this agent after any changes to `backend/app/models/` or `backend/alembic/versions/`. It runs `alembic check` and reports whether the current models are reflected in existing migrations. If a migration is missing, it returns the exact command to generate one. Do not create migrations without running this agent first.
+
+<!-- SPECKIT START -->
+For additional context about technologies to be used, project structure,
+shell commands, and other important information, read the current plan
+<!-- SPECKIT END -->
