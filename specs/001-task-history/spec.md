@@ -1,0 +1,114 @@
+# Feature Specification: Task Change History
+
+**Feature Branch**: `001-task-history`  
+**Created**: 2026-05-11  
+**Status**: Draft  
+**Input**: User description: "adding task history - Each task should store a history of its changes. Accordingly, a button for viewing this history should be added to the UI (between the task edit and delete buttons). Clicking this button should open a list of the change history (with a brief list of the fields that were changed). Clicking on each line in the history should open a modal window with a more detailed description of the changed fields, in the WAS->BECAME format."
+
+## User Scenarios & Testing *(mandatory)*
+
+### User Story 1 - View Task Change History List (Priority: P1)
+
+A user wants to understand what changes have been made to a task over time. They click the history button on a task row (positioned between the edit and delete buttons) and see a list of all past changes, each showing when it occurred and which fields were affected.
+
+**Why this priority**: This is the entry point for the entire feature. Without the history list, no other part of the feature is accessible. It also provides the most value on its own — the user immediately knows what changed and when.
+
+**Independent Test**: Can be fully tested by clicking the history button on a task that has been edited at least once, and verifying that a list of change entries appears with timestamps, author name, and field summaries.
+
+**Acceptance Scenarios**:
+
+1. **Given** a task that has been edited at least once, **When** the user clicks the history button, **Then** a panel or inline list opens showing all change entries in reverse chronological order (most recent first).
+2. **Given** the history list is open, **When** the user reviews each entry, **Then** each entry displays the date/time of the change, the name of the user who made it, and a brief summary of which fields were modified (e.g., "Status, Priority changed").
+3. **Given** a newly created task with no edits, **When** the user clicks the history button, **Then** the list displays a message indicating there are no recorded changes.
+
+---
+
+### User Story 2 - View Detailed Field Diff in Modal (Priority: P2)
+
+A user wants to see exactly what value a field had before and after a specific change. They click a history entry in the list and a modal opens showing each changed field with its old value (WAS) and new value (BECAME) side by side.
+
+**Why this priority**: Provides the core investigative value of the feature. The list (P1) tells the user *that* something changed; the detail modal tells them *what* it changed from and to.
+
+**Independent Test**: Can be fully tested by clicking any entry in the history list and verifying that the resulting modal shows WAS and BECAME values for each field that was modified in that change.
+
+**Acceptance Scenarios**:
+
+1. **Given** the history list is open, **When** the user clicks any history entry, **Then** a modal opens showing the timestamp of the change and a table of modified fields with their previous (WAS) and new (BECAME) values.
+2. **Given** the detail modal is open, **When** multiple fields were changed in that event, **Then** all changed fields are displayed, each on its own row with clearly labeled WAS and BECAME columns.
+3. **Given** the detail modal is open, **When** the user closes it (via a close button or clicking outside), **Then** the modal closes and the history list remains visible.
+
+---
+
+### User Story 3 - History Captured Automatically on Task Edit (Priority: P3)
+
+Every time a user modifies and saves a task, the system automatically records what changed. No additional action is required from the user — the history grows silently in the background.
+
+**Why this priority**: This is the prerequisite for P1 and P2, but is classified P3 here because it has no direct UI and its value is only visible through the history list. From a testing standpoint it can be validated through the list view.
+
+**Independent Test**: Can be fully tested by editing a task field, saving it, then opening the history list and confirming a new entry appears reflecting the change.
+
+**Acceptance Scenarios**:
+
+1. **Given** a task with existing history, **When** the user edits one or more fields and saves, **Then** a new history entry appears at the top of the history list.
+2. **Given** a task edit that touches multiple fields simultaneously, **When** the user saves, **Then** all changed fields are captured in a single history entry (not separate entries per field).
+3. **Given** a task where the user opens the edit form but makes no changes and saves, **When** the history list is opened, **Then** no new history entry is added.
+
+---
+
+### Edge Cases
+
+- What happens when a task has no history yet (newly created)? The history list displays an empty-state message, not an error.
+- How does the system handle a task being deleted? All history records for that task are permanently deleted along with the task (cascade delete); no orphaned records are retained.
+- What if the history list grows very large? All history entries are loaded and displayed at once with scrolling; no pagination, truncation, or auto-purging is applied.
+- What if a field value is empty/null before or after the change? The WAS or BECAME value is displayed as a blank or as a clear "empty" indicator.
+
+## Requirements *(mandatory)*
+
+### Functional Requirements
+
+- **FR-001**: System MUST automatically record a change entry each time a task's fields are updated and saved.
+- **FR-002**: Each change entry MUST capture the exact date and time the change occurred.
+- **FR-003**: Each change entry MUST record which fields were modified, along with their previous (WAS) and new (BECAME) values.
+- **FR-004**: When multiple fields are changed in a single save operation, the system MUST group them into a single change entry.
+- **FR-005**: No history entry MUST be created when a task is opened and saved without any field modifications.
+- **FR-006**: The task row in the UI MUST include a history button positioned between the existing edit and delete buttons.
+- **FR-007**: Clicking the history button MUST display the full list of change entries for that task.
+- **FR-008**: The history list MUST be presented in reverse chronological order (most recent change first).
+- **FR-009**: Each entry in the history list MUST show the timestamp, the name of the user who made the change, and a brief summary of which fields changed.
+- **FR-010**: Clicking a history list entry MUST open a modal displaying the full WAS → BECAME detail for every field changed in that entry.
+- **FR-011**: The detail modal MUST present each changed field as a labeled row with clearly separated WAS and BECAME values.
+- **FR-012**: Only the owner of a task MAY view that task's change history; unauthorized access returns the same result as a non-existent resource.
+- **FR-013**: Task creation MUST NOT generate a history entry; only subsequent modifications are tracked.
+
+### Key Entities
+
+- **Task Change Record**: Represents a single modification event on a task. Linked to a specific task; includes the timestamp of the change, the identity of the user who made it, and one or more field changes.
+- **Field Change**: Represents the before/after state of one field within a change record. Includes the field name (human-readable), the previous value (WAS), and the new value (BECAME).
+
+## Success Criteria *(mandatory)*
+
+### Measurable Outcomes
+
+- **SC-001**: Users can open the history list for any task and see all past changes within 2 seconds of clicking the history button.
+- **SC-002**: Every task save that modifies at least one field results in a corresponding history entry visible in the list within 1 second of the save completing.
+- **SC-003**: 100% of editable task fields (title, description, status, priority, due date) are captured in the change record when modified.
+- **SC-004**: Users can distinguish the exact before and after state of every changed field without needing any additional context or documentation.
+- **SC-005**: No history entry is lost or duplicated; the history list is consistent and complete across all sessions.
+
+## Clarifications
+
+### Session 2026-05-11
+
+- Q: Should each history entry display who made the change (author name)? → A: Yes — store and display the author's name in both the history list and the detail modal.
+- Q: When a task is deleted, what happens to its history records? → A: Cascade delete — all history records are permanently removed along with the task.
+- Q: How should the history list load when a task has many changes? → A: Load all records at once with scrolling; no pagination or truncation.
+
+## Assumptions
+
+- Only the task owner can view the history (consistent with the existing authorization model — cross-account access is treated as non-existent).
+- All user-editable task fields are tracked: title, description, status, priority, and due date.
+- Task creation is not recorded as a history entry; tracking begins from the first edit after creation.
+- History entries are retained indefinitely; there is no automatic expiry or purging.
+- The history UI is presented as an inline panel or dropdown anchored to the task row, not a separate full-page navigation.
+- The detail modal is a standard overlay that can be dismissed by the user.
+- The history feature is scoped to individual tasks; there is no cross-task or list-level change log in this iteration.
