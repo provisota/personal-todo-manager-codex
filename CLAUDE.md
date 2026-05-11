@@ -63,7 +63,7 @@ docker compose exec backend alembic upgrade head
 
 **Notification IDs**: formatted as `"{type}:{task_id}"` (e.g., `overdue:550e8400-...`). The `NotificationAck` table persists per-user dismissals; acknowledged notifications are excluded from subsequent WS batches unless `include_acknowledged: true` is sent.
 
-**Migrations**: models must be imported in `alembic/env.py` (via `app.models.base`) for autogenerate to detect changes.
+**Migrations**: models must be imported in `backend/app/db/base.py` (which is itself imported in `alembic/env.py`) for autogenerate to detect changes.
 
 **Local demo login**: set `TEST_AUTH_ENABLED=true` in `backend/.env` to enable the "Use local demo login" button. Never enable in production.
 

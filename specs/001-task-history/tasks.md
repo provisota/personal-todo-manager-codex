@@ -76,7 +76,7 @@
 
 ### Implementation for User Story 1 — Backend
 
-- [ ] T012 [US1] Create `get_task_history()` in `backend/app/services/history.py` — query `TaskChangeRecord` rows for `(task_id, user_id)` with eager-loaded `fields` and joined `user.display_name`, ordered by `created_at DESC`
+- [ ] T012 [US1] Create `get_task_history()` in `backend/app/services/history.py` — first verify the task exists and belongs to `user_id` (follow the same ownership check pattern as `get_task()` in `tasks.py`; return `None` if not found so the route handler can return 404); then query `TaskChangeRecord` rows for `(task_id, user_id)` with eager-loaded `fields` and joined `user.display_name`, ordered by `created_at DESC`
 - [ ] T013 [US1] Add `GET /api/tasks/{task_id}/history` route in `backend/app/api/tasks.py` — thin handler delegating to `get_task_history()`, returns `list[TaskHistoryRead]`
 - [ ] T014 [US1] Run `cd backend && pytest tests/test_task_history.py` and confirm T011 tests pass (green)
 

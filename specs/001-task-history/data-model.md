@@ -53,13 +53,13 @@ No new columns on the `tasks` table. History records are stored in a separate ta
 
 All field values are stored as human-readable strings:
 
-| Task field | Serialized form |
-|------------|-----------------|
-| `title` | Plain string value |
-| `description` | Plain string value (empty string → stored as `""` or NULL?) — store as `None` when empty |
-| `status` | Enum label: `"To Do"`, `"In Progress"`, `"Done"` |
-| `priority` | Enum label: `"Low"`, `"Medium"`, `"High"` |
-| `due_date` | ISO 8601 date string: `"2026-05-11"`, or `None` if cleared |
+| Task field | Serialized form                                                                                    |
+|------------|----------------------------------------------------------------------------------------------------|
+| `title` | Plain string value                                                                                 |
+| `description` | Plain string value (empty string → should be stored as `""`) |
+| `status` | Enum label: `"To Do"`, `"In Progress"`, `"Done"`                                                   |
+| `priority` | Enum label: `"Low"`, `"Medium"`, `"High"`                                                          |
+| `due_date` | ISO 8601 date string: `"2026-05-11"`, or `None` if cleared                                         |
 
 ---
 
