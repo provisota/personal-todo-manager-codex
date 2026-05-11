@@ -4,9 +4,68 @@ from fastapi import HTTPException, status
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.base import new_uuid
 from app.models.project_list import ProjectList
 from app.models.task import Task, TaskPriority, TaskStatus
+from app.models.task_history import FieldChange, TaskChangeRecord
 from app.schemas.tasks import TaskCreate, TaskUpdate
+
+_STATUS_LABELS = {
+    "todo": "To Do",
+    "in_progress": "In Progress",
+    "done": "Done",
+}
+_PRIORITY_LABELS = {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High",
+}
+
+
+def _serialize_field(field: str, value) -> str | None:
+    if field == "status":
+        return _STATUS_LABELS.get(value, value) if value is not None else None
+    if field == "priority":
+        return _PRIORITY_LABELS.get(value, value) if value is not None else None
+    if field == "due_date":
+        return value.isoformat() if value is not None else None
+    if value == "" or value is None:
+        return value if value is None else ""
+    return str(value)
+
+
+_FIELD_LABELS = {
+    "title": "Title",
+    "description": "Description",
+    "status": "Status",
+    "priority": "Priority",
+    "due_date": "Due Date",
+}
+
+
+async def _capture_history(
+    session: AsyncSession, task: Task, user_id: str, old_snapshot: dict
+) -> None:
+    new_snapshot = {
+        "title": task.title,
+        "description": task.description,
+        "status": task.status,
+        "priority": task.priority,
+        "due_date": task.due_date,
+    }
+    changed = []
+    for field, label in _FIELD_LABELS.items():
+        old_val = _serialize_field(field, old_snapshot[field])
+        new_val = _serialize_field(field, new_snapshot[field])
+        if old_val != new_val:
+            changed.append(FieldChange(field_name=label, old_value=old_val, new_value=new_val))
+    if changed:
+        record_id = new_uuid()
+        record = TaskChangeRecord(id=record_id, task_id=task.id, user_id=user_id)
+        session.add(record)
+        for fc in changed:
+            fc.history_id = record_id
+            session.add(fc)
 
 
 async def _ensure_list_owned(session: AsyncSession, user_id: str, list_id: str) -> ProjectList:
@@ -89,6 +148,13 @@ async def update_task(
     session: AsyncSession, user_id: str, task_id: str, payload: TaskUpdate
 ) -> Task:
     task = await get_user_task(session, user_id, task_id)
+    old_snapshot = {
+        "title": task.title,
+        "description": task.description,
+        "status": task.status,
+        "priority": task.priority,
+        "due_date": task.due_date,
+    }
     data = payload.model_dump(exclude_unset=True)
     if "list_id" in data and data["list_id"] is not None and data["list_id"] != task.list_id:
         await _ensure_list_owned(session, user_id, data["list_id"])
@@ -103,6 +169,7 @@ async def update_task(
         task.due_date = data["due_date"]
     if "status" in data and data["status"] is not None:
         _apply_status_transition(task, data["status"])
+    await _capture_history(session, task, user_id, old_snapshot)
     await session.commit()
     await session.refresh(task)
     return task
@@ -112,7 +179,15 @@ async def update_task_status(
     session: AsyncSession, user_id: str, task_id: str, next_status: TaskStatus
 ) -> Task:
     task = await get_user_task(session, user_id, task_id)
+    old_snapshot = {
+        "title": task.title,
+        "description": task.description,
+        "status": task.status,
+        "priority": task.priority,
+        "due_date": task.due_date,
+    }
     _apply_status_transition(task, next_status)
+    await _capture_history(session, task, user_id, old_snapshot)
     await session.commit()
     await session.refresh(task)
     return task

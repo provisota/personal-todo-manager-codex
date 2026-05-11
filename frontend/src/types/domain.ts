@@ -44,6 +44,20 @@ export interface TaskFilters {
   due: DueFilter;
 }
 
+export interface FieldChange {
+  field_name: string;
+  old_value: string | null;
+  new_value: string | null;
+}
+
+export interface TaskHistoryEntry {
+  id: string;
+  task_id: string;
+  changed_by_name: string;
+  created_at: string;
+  fields: FieldChange[];
+}
+
 export interface NotificationItem {
   id: string;
   type: 'overdue' | 'due_soon';

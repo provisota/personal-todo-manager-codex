@@ -21,12 +21,12 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T001 Create `TaskChangeRecord` and `FieldChange` ORM models in `backend/app/models/task_history.py` (fields, FK constraints, indexes — see data-model.md)
-- [ ] T002 Import `TaskChangeRecord` in `backend/app/db/base.py` so Alembic autogenerate detects both new models
-- [ ] T003 [P] Create `FieldChangeRead` and `TaskHistoryRead` Pydantic schemas in `backend/app/schemas/history.py` (see contracts/api.md for field list)
-- [ ] T004 Run `check-migration` agent then generate migration with `alembic revision --autogenerate -m "add_task_history"` — output file goes to `backend/alembic/versions/`
-- [ ] T005 [P] Add `FieldChange` and `TaskHistoryEntry` TypeScript interfaces to `frontend/src/types/domain.ts` (see contracts/api.md for shape)
-- [ ] T006 [P] Add `taskHistory(taskId: string)` method to the `api` object in `frontend/src/api/client.ts` — calls `GET /api/tasks/{taskId}/history`
+- [X] T001 Create `TaskChangeRecord` and `FieldChange` ORM models in `backend/app/models/task_history.py` (fields, FK constraints, indexes — see data-model.md)
+- [X] T002 Import `TaskChangeRecord` in `backend/app/db/base.py` so Alembic autogenerate detects both new models
+- [X] T003 [P] Create `FieldChangeRead` and `TaskHistoryRead` Pydantic schemas in `backend/app/schemas/history.py` (see contracts/api.md for field list)
+- [X] T004 Run `check-migration` agent then generate migration with `alembic revision --autogenerate -m "add_task_history"` — output file goes to `backend/alembic/versions/`
+- [X] T005 [P] Add `FieldChange` and `TaskHistoryEntry` TypeScript interfaces to `frontend/src/types/domain.ts` (see contracts/api.md for shape)
+- [X] T006 [P] Add `taskHistory(taskId: string)` method to the `api` object in `frontend/src/api/client.ts` — calls `GET /api/tasks/{taskId}/history`
 
 **Checkpoint**: Data layer ready — migration exists, models importable, TypeScript types defined, API client method ready.
 
@@ -42,7 +42,7 @@
 
 ### Tests for User Story 3 (write first — must fail before T008)
 
-- [ ] T007 [US3] Write pytest tests for history capture in `backend/tests/test_task_history.py`:
+- [X] T007 [US3] Write pytest tests for history capture in `backend/tests/test_task_history.py`:
   - Login, create task, update one field → assert one history record with one `FieldChange`
   - Update multiple fields at once → assert single record with multiple `FieldChange` rows
   - Open edit form, save without changes → assert no new history record created
@@ -51,9 +51,9 @@
 
 ### Implementation for User Story 3
 
-- [ ] T008 [US3] Add `_capture_history()` helper and call it in `update_task()` in `backend/app/services/tasks.py` — compare old vs new field values, create `TaskChangeRecord` + `FieldChange` rows in the same transaction (see data-model.md for field serialization rules)
-- [ ] T009 [US3] Call the same `_capture_history()` helper in `update_task_status()` in `backend/app/services/tasks.py`
-- [ ] T010 [US3] Run `cd backend && pytest tests/test_task_history.py` and confirm T007 tests pass (green)
+- [X] T008 [US3] Add `_capture_history()` helper and call it in `update_task()` in `backend/app/services/tasks.py` — compare old vs new field values, create `TaskChangeRecord` + `FieldChange` rows in the same transaction (see data-model.md for field serialization rules)
+- [X] T009 [US3] Call the same `_capture_history()` helper in `update_task_status()` in `backend/app/services/tasks.py`
+- [X] T010 [US3] Run `cd backend && pytest tests/test_task_history.py` and confirm T007 tests pass (green)
 
 **Checkpoint**: History is captured on every task update. Backend tests pass. US1 and US2 now have data to display.
 
@@ -67,7 +67,7 @@
 
 ### Tests for User Story 1 — Backend (write first — must fail before T012)
 
-- [ ] T011 [US1] Write pytest tests for `GET /api/tasks/{task_id}/history` in `backend/tests/test_task_history.py`:
+- [X] T011 [US1] Write pytest tests for `GET /api/tasks/{task_id}/history` in `backend/tests/test_task_history.py`:
   - Authenticated owner → `200` with history list including `changed_by_name`, `created_at`, `fields`
   - Task with no history → `200` with empty list `[]`
   - Wrong user → `404` (ownership enforced)
@@ -76,13 +76,13 @@
 
 ### Implementation for User Story 1 — Backend
 
-- [ ] T012 [US1] Create `get_task_history()` in `backend/app/services/history.py` — first verify the task exists and belongs to `user_id` (follow the same ownership check pattern as `get_task()` in `tasks.py`; return `None` if not found so the route handler can return 404); then query `TaskChangeRecord` rows for `(task_id, user_id)` with eager-loaded `fields` and joined `user.display_name`, ordered by `created_at DESC`
-- [ ] T013 [US1] Add `GET /api/tasks/{task_id}/history` route in `backend/app/api/tasks.py` — thin handler delegating to `get_task_history()`, returns `list[TaskHistoryRead]`
-- [ ] T014 [US1] Run `cd backend && pytest tests/test_task_history.py` and confirm T011 tests pass (green)
+- [X] T012 [US1] Create `get_task_history()` in `backend/app/services/history.py` — first verify the task exists and belongs to `user_id` (follow the same ownership check pattern as `get_task()` in `tasks.py`; return `None` if not found so the route handler can return 404); then query `TaskChangeRecord` rows for `(task_id, user_id)` with eager-loaded `fields` and joined `user.display_name`, ordered by `created_at DESC`
+- [X] T013 [US1] Add `GET /api/tasks/{task_id}/history` route in `backend/app/api/tasks.py` — thin handler delegating to `get_task_history()`, returns `list[TaskHistoryRead]`
+- [X] T014 [US1] Run `cd backend && pytest tests/test_task_history.py` and confirm T011 tests pass (green)
 
 ### Tests for User Story 1 — Frontend (write first — must fail before T016)
 
-- [ ] T015 [P] [US1] Write Vitest tests for `TaskHistory` component in `frontend/src/features/tasks/TaskHistory.test.tsx`:
+- [X] T015 [P] [US1] Write Vitest tests for `TaskHistory` component in `frontend/src/features/tasks/TaskHistory.test.tsx`:
   - Renders a list of history entries (timestamp, author, field summary)
   - Shows empty-state message when history array is empty
   - Each entry is clickable (onClick prop fires)
@@ -90,9 +90,9 @@
 
 ### Implementation for User Story 1 — Frontend
 
-- [ ] T016 [US1] Create `TaskHistory` component in `frontend/src/features/tasks/TaskHistory.tsx` — fetches `api.taskHistory(task.id)`, renders each `TaskHistoryEntry` as a clickable row showing `created_at` (formatted), `changed_by_name`, and comma-joined `field_name` list; shows empty-state when list is empty
-- [ ] T017 [US1] Modify `frontend/src/features/tasks/TaskBoard.tsx`: add `historyTask` state, render a `History` (lucide-react) icon button between the `Pencil` and `Trash2` buttons for each task row, toggle `TaskHistory` panel on click
-- [ ] T018 [US1] Run `cd frontend && npm test` and confirm T015 tests pass (green)
+- [X] T016 [US1] Create `TaskHistory` component in `frontend/src/features/tasks/TaskHistory.tsx` — fetches `api.taskHistory(task.id)`, renders each `TaskHistoryEntry` as a clickable row showing `created_at` (formatted), `changed_by_name`, and comma-joined `field_name` list; shows empty-state when list is empty
+- [X] T017 [US1] Modify `frontend/src/features/tasks/TaskBoard.tsx`: add `historyTask` state, render a `History` (lucide-react) icon button between the `Pencil` and `Trash2` buttons for each task row, toggle `TaskHistory` panel on click
+- [X] T018 [US1] Run `cd frontend && npm test` and confirm T015 tests pass (green)
 
 **Checkpoint**: History button visible in task row, panel opens, list rendered. US1 fully functional.
 
@@ -106,7 +106,7 @@
 
 ### Tests for User Story 2 — Frontend (write first — must fail before T020)
 
-- [ ] T019 [US2] Write Vitest tests for `TaskHistoryModal` in `frontend/src/features/tasks/TaskHistoryModal.test.tsx`:
+- [X] T019 [US2] Write Vitest tests for `TaskHistoryModal` in `frontend/src/features/tasks/TaskHistoryModal.test.tsx`:
   - Renders modal with correct `created_at`, `changed_by_name`
   - Renders a row per `FieldChange` with `field_name`, `old_value` (WAS), `new_value` (BECAME)
   - Displays `—` or "empty" indicator for null `old_value` or `new_value`
@@ -115,9 +115,9 @@
 
 ### Implementation for User Story 2 — Frontend
 
-- [ ] T020 [US2] Create `TaskHistoryModal` component in `frontend/src/features/tasks/TaskHistoryModal.tsx` — receives a `TaskHistoryEntry` prop, renders an overlay modal with header (timestamp + author), a table of field changes with WAS and BECAME columns, a close button; clicking backdrop closes modal
-- [ ] T021 [US2] Wire `TaskHistoryModal` into `TaskHistory.tsx` — add `selectedEntry` state, pass `onEntryClick` callback that sets `selectedEntry`, render `<TaskHistoryModal>` when `selectedEntry` is non-null
-- [ ] T022 [US2] Run `cd frontend && npm test` and confirm T019 tests pass (green)
+- [X] T020 [US2] Create `TaskHistoryModal` component in `frontend/src/features/tasks/TaskHistoryModal.tsx` — receives a `TaskHistoryEntry` prop, renders an overlay modal with header (timestamp + author), a table of field changes with WAS and BECAME columns, a close button; clicking backdrop closes modal
+- [X] T021 [US2] Wire `TaskHistoryModal` into `TaskHistory.tsx` — add `selectedEntry` state, pass `onEntryClick` callback that sets `selectedEntry`, render `<TaskHistoryModal>` when `selectedEntry` is non-null
+- [X] T022 [US2] Run `cd frontend && npm test` and confirm T019 tests pass (green)
 
 **Checkpoint**: History list entries clickable, modal opens with WAS → BECAME diff. US2 fully functional.
 
@@ -127,9 +127,9 @@
 
 **Purpose**: Full pre-commit validation and manual end-to-end check.
 
-- [ ] T023 Run full check suite: `cd backend && pytest` (all tests), `cd frontend && npm test && npm run build` — all must pass
-- [ ] T024 [P] Run `check-migration` agent to confirm migration is in sync with current models
-- [ ] T025 [P] Manual browser validation: start app → edit a task → open history → verify entry appears with correct author, timestamp, and fields → click entry → verify modal shows WAS/BECAME for each changed field → close modal → delete task → confirm task (and history) gone
+- [X] T023 Run full check suite: `cd backend && pytest` (all tests), `cd frontend && npm test && npm run build` — all must pass
+- [X] T024 [P] Run `check-migration` agent to confirm migration is in sync with current models
+- [X] T025 [P] Manual browser validation: start app → edit a task → open history → verify entry appears with correct author, timestamp, and fields → click entry → verify modal shows WAS/BECAME for each changed field → close modal → delete task → confirm task (and history) gone
 
 ---
 
