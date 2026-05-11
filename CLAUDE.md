@@ -8,12 +8,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 source .venv/bin/activate
-uvicorn app.main:app --reload       # dev server
-pytest                              # all tests
-pytest tests/test_auth_and_tasks.py # single test file
-alembic upgrade head                # apply migrations
-alembic revision --autogenerate -m "description"  # new migration
-python scripts/seed.py              # seed demo data
+uvicorn app.main:app --reload                 # dev server
+pytest                                        # all tests
+pytest tests/test_auth_and_tasks.py           # single test file
+alembic upgrade head                          # apply migrations
+python scripts/new_migration.py description   # new migration (sequential NNNN_ prefix)
+python scripts/seed.py                        # seed demo data
 ```
 
 ### Frontend (run from `frontend/`)
