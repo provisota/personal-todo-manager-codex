@@ -22,7 +22,10 @@ echo "exit:$?"
 
 3. If FAIL, include this exact command in your report:
 ```bash
-cd backend && source .venv/bin/activate && alembic revision --autogenerate -m "<describe what changed>"
+cd backend && source .venv/bin/activate && python scripts/new_migration.py <describe_what_changed>
 ```
+
+This wrapper script auto-assigns the next sequential NNNN prefix (e.g. `0005_`) and calls
+`alembic revision --autogenerate --rev-id NNNN_<describe_what_changed>`.
 
 Do not create the migration yourself. Return your report and stop.

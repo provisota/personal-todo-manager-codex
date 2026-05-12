@@ -1,9 +1,10 @@
-import { CalendarDays, CheckCircle2, Circle, Clock3, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { CalendarDays, CheckCircle2, Circle, Clock3, History, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { api } from '../../api/client';
 import type { DueFilter, ProjectList, Task, TaskFilters, TaskPriority, TaskStatus } from '../../types/domain';
 import { TaskForm, type TaskFormValue } from './TaskForm';
+import { TaskHistory } from './TaskHistory';
 
 interface Props {
   lists: ProjectList[];
@@ -41,6 +42,7 @@ export function TaskBoard({
   const [error, setError] = useState<string | null>(null);
   const [formTask, setFormTask] = useState<Task | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [historyTask, setHistoryTask] = useState<Task | null>(null);
 
   const loadTasks = useCallback(async () => {
     if (!selectedList) {
@@ -206,6 +208,9 @@ export function TaskBoard({
               <button className="icon-button" type="button" aria-label={`Edit ${task.title}`} onClick={() => { setFormTask(task); setFormOpen(true); }}>
                 <Pencil size={17} />
               </button>
+              <button className="icon-button" type="button" aria-label={`History for ${task.title}`} onClick={() => setHistoryTask(historyTask?.id === task.id ? null : task)}>
+                <History size={17} />
+              </button>
               <button className="icon-button danger" type="button" aria-label={`Delete ${task.title}`} onClick={() => void deleteTask(task)}>
                 <Trash2 size={17} />
               </button>
@@ -213,6 +218,16 @@ export function TaskBoard({
           </article>
         ))}
       </div>
+
+      {historyTask && (
+        <aside className="history-panel">
+          <div className="history-panel-header">
+            <span className="history-panel-title">History: {historyTask.title}</span>
+            <button className="icon-button" type="button" aria-label="Close history" onClick={() => setHistoryTask(null)}>×</button>
+          </div>
+          <TaskHistory taskId={historyTask.id} onEntryClick={() => {}} />
+        </aside>
+      )}
 
       {formOpen ? (
         <TaskForm

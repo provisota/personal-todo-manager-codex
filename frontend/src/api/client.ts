@@ -1,4 +1,4 @@
-import type { AuthProviders, ProjectList, Task, TaskFilters, TaskPriority, TaskStatus, User } from '../types/domain';
+import type { AuthProviders, ProjectList, Task, TaskFilters, TaskHistoryEntry, TaskPriority, TaskStatus, User } from '../types/domain';
 
 function defaultApiBaseUrl() {
   if (typeof window === 'undefined') {
@@ -91,5 +91,6 @@ export const api = {
     request<Task>(`/api/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(task) }),
   updateTaskStatus: (id: string, status: TaskStatus) =>
     request<Task>(`/api/tasks/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
-  deleteTask: (id: string) => request<{ ok: boolean }>(`/api/tasks/${id}`, { method: 'DELETE' })
+  deleteTask: (id: string) => request<{ ok: boolean }>(`/api/tasks/${id}`, { method: 'DELETE' }),
+  taskHistory: (taskId: string) => request<TaskHistoryEntry[]>(`/api/tasks/${taskId}/history`)
 };
