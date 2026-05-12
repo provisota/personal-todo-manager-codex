@@ -55,13 +55,16 @@ A user clicks a row in the history table and a modal overlay appears in the cent
 - **FR-003**: Table rows MUST be separated by thin horizontal dividers; cells MUST have comfortable internal padding.
 - **FR-004**: The "When" column MUST display timestamps in a format that does not line-wrap (e.g., "5/11/2026, 6:58:33 PM").
 - **FR-005**: The table MUST occupy most of the history panel width without touching the panel edges.
+- **FR-005a**: The table body MUST have a fixed maximum height; when entries exceed it, the table body MUST scroll vertically while the header row remains fixed/visible.
 - **FR-006**: The existing panel title ("History: [Task Name]") and its close button ("×") MUST remain unchanged and positioned above the table.
 - **FR-007**: Clicking a row in the history table MUST open a modal dialog over the rest of the interface.
 - **FR-008**: The modal MUST be centered on screen with a semi-transparent dark overlay behind it.
-- **FR-009**: The modal MUST contain a table with three columns: "Field", "Was", and "Became", listing all changed fields for the selected history entry.
+- **FR-009**: The modal MUST display a header line showing "Changes — [timestamp] by [author]" identifying the selected history entry.
+- **FR-009a**: Below the header, the modal MUST contain a table with three columns: "Field", "Was", and "Became", listing all changed fields for the selected history entry.
 - **FR-010**: The modal table MUST follow the same visual styling rules as the history table (light header, dividers, padding, bordered container).
 - **FR-011**: The modal MUST have a "×" close button in its top-right corner that dismisses it.
 - **FR-012**: Clicking outside the modal (on the overlay) MUST also dismiss it.
+- **FR-012a**: Pressing the Escape key while the modal is open MUST also dismiss it.
 - **FR-013**: The current inline/inline-text rendering of change details below the history list MUST be removed.
 
 ### Key Entities
@@ -79,10 +82,19 @@ A user clicks a row in the history table and a modal overlay appears in the cent
 - **SC-004**: The history panel and modal are visually consistent with the rest of the application (matching colour palette, typography, border radius, and spacing conventions).
 - **SC-005**: No change-detail content is rendered inline inside the history panel as plain text.
 
+## Clarifications
+
+### Session 2026-05-12
+
+- Q: When the history table has many entries (50+), how should it handle overflow? → A: The table has a fixed maximum height and scrolls vertically; all entries remain accessible via scroll.
+- Q: Should the Escape key close the change detail modal? → A: Yes — pressing Escape closes the modal (standard keyboard accessibility behaviour).
+- Q: Does the modal have a title/header showing which history entry is open? → A: Yes — the modal header shows "Changes — [timestamp] by [author]" for context.
+- Q: Should Tailwind CSS be installed, or should existing Tailwind class names be replaced with custom CSS classes in global.css? → A: Replace Tailwind class names with CSS classes in global.css — no new dependencies; consistent with all other components in the project.
+
 ## Assumptions
 
 - The existing history API already returns field-level change data (field name, was value, became value) per history entry; no backend changes are needed.
 - The current history component already fetches and stores history entries; only the rendering layer is being changed.
-- The application uses a component-based frontend framework (React/TypeScript) and CSS-in-JS or a utility-CSS system consistent with the existing UI.
+- The application uses a component-based frontend framework (React/TypeScript) with custom CSS classes in `global.css` — Tailwind CSS is not installed and will not be added. All styling changes must use the existing `global.css` pattern.
 - The visual design tokens (colours, border radius, shadows, spacing) already used in the application will be reused — no new design tokens need to be introduced.
 - Mobile/responsive layout is not in scope for this iteration; the table and modal are designed for desktop viewports.
