@@ -52,4 +52,11 @@ describe('TaskHistoryModal', () => {
     await userEvent.click(screen.getByTestId('modal-backdrop'));
     expect(handleClose).toHaveBeenCalledOnce();
   });
+
+  it('calls onClose when Escape key is pressed', async () => {
+    const handleClose = vi.fn();
+    render(<TaskHistoryModal entry={entry} onClose={handleClose} />);
+    await userEvent.keyboard('{Escape}');
+    expect(handleClose).toHaveBeenCalledOnce();
+  });
 });

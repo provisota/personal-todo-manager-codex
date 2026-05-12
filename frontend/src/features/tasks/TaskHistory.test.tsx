@@ -69,4 +69,19 @@ describe('TaskHistory', () => {
     await userEvent.click(screen.getByText('Demo User'));
     expect(handleClick).toHaveBeenCalledWith(entry1);
   });
+
+  it('renders a <table> element with column headers When, Changed By, Fields Changed', async () => {
+    apiMock.taskHistory.mockResolvedValue([entry1, entry2]);
+    render(<TaskHistory taskId="task-1" onEntryClick={vi.fn()} />);
+    await waitFor(() => expect(screen.getByRole('table')).toBeInTheDocument());
+    expect(screen.getByText('When')).toBeInTheDocument();
+    expect(screen.getByText('Changed By')).toBeInTheDocument();
+    expect(screen.getByText('Fields Changed')).toBeInTheDocument();
+  });
+
+  it('renders each entry as a <tr> row', async () => {
+    apiMock.taskHistory.mockResolvedValue([entry1, entry2]);
+    render(<TaskHistory taskId="task-1" onEntryClick={vi.fn()} />);
+    await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3)); // 1 header + 2 data rows
+  });
 });

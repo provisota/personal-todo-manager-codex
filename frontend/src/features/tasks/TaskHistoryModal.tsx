@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import type { TaskHistoryEntry } from '../../types/domain';
 
 interface Props {
@@ -6,6 +7,14 @@ interface Props {
 }
 
 export function TaskHistoryModal({ entry, onClose }: Props) {
+  useEffect(() => {
+    function handler(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [onClose]);
+
   return (
     <div
       data-testid="modal-backdrop"

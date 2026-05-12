@@ -80,3 +80,29 @@ All technology choices are fully determined by the project constitution. This fi
 **Decision**: Use `History` icon from `lucide-react` (already a dependency).
 
 **Rationale**: The `History` icon is semantically correct and available in the existing icon library; no new dependency needed.
+
+---
+
+## Decision 8: History list presentation format
+
+**Decision**: Render history entries in `TaskHistory.tsx` as an HTML `<table>` with column headers **When**, **Changed By**, and **Fields Changed**. Each row is a clickable `<tr>` that opens the detail modal.
+
+**Rationale**: A table aligns timestamps, authors, and field summaries in consistent columns, making the list easier to scan than an unstructured bullet list. The column headers provide immediate context without requiring the user to infer the meaning of each value. This is the format explicitly requested via clarification.
+
+**Alternatives considered**:
+- Bullet list (`<ul>/<li>`) — discarded; lacks column alignment and headers; was the original implementation.
+- Card grid — discarded; over-engineered for three fields per row.
+
+---
+
+## Decision 9: Detail modal dismissal methods
+
+**Decision**: `TaskHistoryModal.tsx` supports three dismissal methods: (1) click the × button, (2) click the darkened backdrop, (3) press the Escape key. All three must work independently.
+
+**Rationale**: Escape key is the universal keyboard shortcut for closing a modal; omitting it breaks accessibility and keyboard-navigation conventions. Backdrop click and the × button were already implemented. Adding a `keydown` listener via `useEffect` with cleanup covers the keyboard path with no additional dependency.
+
+**Implementation note**: The listener should be attached on mount and removed on unmount (`return () => document.removeEventListener(...)`) to prevent memory leaks.
+
+**Alternatives considered**:
+- X button only — discarded; blocks keyboard users.
+- Browser `<dialog>` element with native Escape support — discarded; requires a larger refactor of the existing overlay approach and adds no benefit for this single modal.
