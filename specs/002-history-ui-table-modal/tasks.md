@@ -18,7 +18,7 @@
 
 **Purpose**: Confirm baseline before touching any production files.
 
-- [ ] T001 Run `cd frontend && npm test` to confirm all existing tests pass before changes
+- [X] T001 Run `cd frontend && npm test` to confirm all existing tests pass before changes
 
 **Checkpoint**: All existing tests green → safe to proceed
 
@@ -32,12 +32,12 @@
 
 ### Tests for User Story 1 ⚠️ Write first — must FAIL before T004
 
-- [ ] T002 [US1] Extend `frontend/src/features/tasks/TaskHistory.test.tsx` — add: (a) test that the table is wrapped in an element with class `history-table-wrapper`; (b) test that the `<table>` has class `history-table`; (c) test that header cells contain text "When", "Changed By", "Fields Changed" (already present — keep); (d) remove any assertion expecting `TaskHistoryModal` to render inside `TaskHistory`
+- [X] T002 [US1] Extend `frontend/src/features/tasks/TaskHistory.test.tsx` — add: (a) test that the table is wrapped in an element with class `history-table-wrapper`; (b) test that the `<table>` has class `history-table`; (c) test that header cells contain text "When", "Changed By", "Fields Changed" (already present — keep); (d) remove any assertion expecting `TaskHistoryModal` to render inside `TaskHistory`
 
 ### Implementation for User Story 1
 
-- [ ] T003 [P] [US1] Add `.history-table-wrapper`, `.history-table`, `.history-table-head`, `.history-table-body`, `.history-table-row`, column-width rules (`th/td:nth-child` proportions 38/28/34%), `thead th` background `#eef4f7`, `tbody tr` hover and divider styles, and `td` padding/nowrap rules to `frontend/src/styles/global.css` — full CSS block per plan.md Phase 1 Design section
-- [ ] T004 [US1] Refactor `frontend/src/features/tasks/TaskHistory.tsx` — wrap `<table>` in `<div className="history-table-wrapper">`; set `className="history-table"` on `<table>`; set `className="history-table-head"` on `<thead>`, `className="history-table-body"` on `<tbody>`, `className="history-table-row"` on each data `<tr>`; remove all Tailwind utility class names; keep existing fetch logic and empty/loading states unchanged (depends on T002 tests failing, T003 CSS in place)
+- [X] T003 [P] [US1] Add `.history-table-wrapper`, `.history-table`, `.history-table-head`, `.history-table-body`, `.history-table-row`, column-width rules (`th/td:nth-child` proportions 38/28/34%), `thead th` background `#eef4f7`, `tbody tr` hover and divider styles, and `td` padding/nowrap rules to `frontend/src/styles/global.css` — full CSS block per plan.md Phase 1 Design section
+- [X] T004 [US1] Refactor `frontend/src/features/tasks/TaskHistory.tsx` — wrap `<table>` in `<div className="history-table-wrapper">`; set `className="history-table"` on `<table>`; set `className="history-table-head"` on `<thead>`, `className="history-table-body"` on `<tbody>`, `className="history-table-row"` on each data `<tr>`; remove all Tailwind utility class names; keep existing fetch logic and empty/loading states unchanged (depends on T002 tests failing, T003 CSS in place)
 
 **Checkpoint**: `npm test` — TaskHistory tests pass; open browser → history table has blue-grey bold header, padded rows, thin dividers, and scrolls when overflow
 
@@ -51,15 +51,15 @@
 
 ### Tests for User Story 2 ⚠️ Write first — must FAIL before T008-T010
 
-- [ ] T005 [P] [US2] Extend `frontend/src/features/tasks/TaskHistoryModal.test.tsx` — add: (a) test that the backdrop element has class `history-modal-backdrop`; (b) test that the dialog has class `history-modal`; (c) test that modal header displays `entry.changed_by_name`; (d) confirm existing close-via-×, close-via-backdrop, close-via-Escape tests are present (already there — keep); (e) confirm Field/Was/Became table rows render correctly (already there — keep)
-- [ ] T006 [P] [US2] Add tests to `frontend/src/features/tasks/TaskBoard.test.tsx` — (a) clicking a history entry row causes `TaskHistoryModal` to appear in the DOM; (b) triggering `onClose` on the modal removes it from the DOM; mock `api.taskHistory` and `api.tasks` as needed
+- [X] T005 [P] [US2] Extend `frontend/src/features/tasks/TaskHistoryModal.test.tsx` — add: (a) test that the backdrop element has class `history-modal-backdrop`; (b) test that the dialog has class `history-modal`; (c) test that modal header displays `entry.changed_by_name`; (d) confirm existing close-via-×, close-via-backdrop, close-via-Escape tests are present (already there — keep); (e) confirm Field/Was/Became table rows render correctly (already there — keep)
+- [X] T006 [P] [US2] Add tests to `frontend/src/features/tasks/TaskBoard.test.tsx` — (a) clicking a history entry row causes `TaskHistoryModal` to appear in the DOM; (b) triggering `onClose` on the modal removes it from the DOM; mock `api.taskHistory` and `api.tasks` as needed
 
 ### Implementation for User Story 2
 
-- [ ] T007 [P] [US2] Add `.history-modal-backdrop`, `.history-modal`, `.history-modal-header`, `.history-modal-title`, `.history-modal-subtitle` CSS rules to `frontend/src/styles/global.css` — full CSS block per plan.md Phase 1 Design section (position: fixed, inset: 0, z-index: 50, flex centering for backdrop; white bg, border-radius 10px, shadow, padding 24px for dialog)
-- [ ] T008 [P] [US2] Refactor `frontend/src/features/tasks/TaskHistoryModal.tsx` — replace `className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"` with `className="history-modal-backdrop"`; replace inner div Tailwind classes with `className="history-modal"`; replace header div with `<div className="history-modal-header">` containing `<div className="history-modal-title">{entry.changed_by_name}</div>` and `<div className="history-modal-subtitle">{new Date(entry.created_at).toLocaleString()}</div>` and the existing `×` close button; replace internal table Tailwind classes with `className="history-table"` (reuse table CSS from US1); keep Escape-key handler and stopPropagation logic unchanged
-- [ ] T009 [US2] Update `frontend/src/features/tasks/TaskHistory.tsx` — remove `selectedEntry` state; remove internal `TaskHistoryModal` import and render; ensure `handleEntryClick` only calls `props.onEntryClick(entry)` without setting local state; no other changes (depends on T004 — same file)
-- [ ] T010 [US2] Update `frontend/src/features/tasks/TaskBoard.tsx` — add `import type { TaskHistoryEntry }` from `../../types/domain`; add `const [selectedHistoryEntry, setSelectedHistoryEntry] = useState<TaskHistoryEntry | null>(null)`; update `<TaskHistory onEntryClick={(entry) => setSelectedHistoryEntry(entry)} />`; add `import { TaskHistoryModal }` from `./TaskHistoryModal`; render `{selectedHistoryEntry && <TaskHistoryModal entry={selectedHistoryEntry} onClose={() => setSelectedHistoryEntry(null)} />}` at the top level of the return, outside `.history-panel` (depends on T009)
+- [X] T007 [P] [US2] Add `.history-modal-backdrop`, `.history-modal`, `.history-modal-header`, `.history-modal-title`, `.history-modal-subtitle` CSS rules to `frontend/src/styles/global.css` — full CSS block per plan.md Phase 1 Design section (position: fixed, inset: 0, z-index: 50, flex centering for backdrop; white bg, border-radius 10px, shadow, padding 24px for dialog)
+- [X] T008 [P] [US2] Refactor `frontend/src/features/tasks/TaskHistoryModal.tsx` — replace `className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"` with `className="history-modal-backdrop"`; replace inner div Tailwind classes with `className="history-modal"`; replace header div with `<div className="history-modal-header">` containing `<div className="history-modal-title">{entry.changed_by_name}</div>` and `<div className="history-modal-subtitle">{new Date(entry.created_at).toLocaleString()}</div>` and the existing `×` close button; replace internal table Tailwind classes with `className="history-table"` (reuse table CSS from US1); keep Escape-key handler and stopPropagation logic unchanged
+- [X] T009 [US2] Update `frontend/src/features/tasks/TaskHistory.tsx` — remove `selectedEntry` state; remove internal `TaskHistoryModal` import and render; ensure `handleEntryClick` only calls `props.onEntryClick(entry)` without setting local state; no other changes (depends on T004 — same file)
+- [X] T010 [US2] Update `frontend/src/features/tasks/TaskBoard.tsx` — add `import type { TaskHistoryEntry }` from `../../types/domain`; add `const [selectedHistoryEntry, setSelectedHistoryEntry] = useState<TaskHistoryEntry | null>(null)`; update `<TaskHistory onEntryClick={(entry) => setSelectedHistoryEntry(entry)} />`; add `import { TaskHistoryModal }` from `./TaskHistoryModal`; render `{selectedHistoryEntry && <TaskHistoryModal entry={selectedHistoryEntry} onClose={() => setSelectedHistoryEntry(null)} />}` at the top level of the return, outside `.history-panel` (depends on T009)
 
 **Checkpoint**: `npm test` — all tests pass; open browser → clicking a history row opens a centered modal overlay with semi-transparent backdrop; all three close behaviors work
 
@@ -67,8 +67,8 @@
 
 ## Phase 5: Polish & Cross-Cutting Concerns
 
-- [ ] T011 Run `cd frontend && npm test` — verify all tests pass (0 failures)
-- [ ] T012 Run `cd frontend && npm run build` — verify TypeScript build completes with no errors
+- [X] T011 Run `cd frontend && npm test` — verify all tests pass (0 failures)
+- [X] T012 Run `cd frontend && npm run build` — verify TypeScript build completes with no errors
 
 ---
 

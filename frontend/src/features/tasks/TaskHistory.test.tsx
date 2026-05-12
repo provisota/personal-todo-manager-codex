@@ -84,4 +84,16 @@ describe('TaskHistory', () => {
     render(<TaskHistory taskId="task-1" onEntryClick={vi.fn()} />);
     await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3)); // 1 header + 2 data rows
   });
+
+  it('wraps the table in an element with class history-table-wrapper', async () => {
+    apiMock.taskHistory.mockResolvedValue([entry1]);
+    const { container } = render(<TaskHistory taskId="task-1" onEntryClick={vi.fn()} />);
+    await waitFor(() => expect(container.querySelector('.history-table-wrapper')).not.toBeNull());
+  });
+
+  it('renders a <table> with class history-table', async () => {
+    apiMock.taskHistory.mockResolvedValue([entry1]);
+    render(<TaskHistory taskId="task-1" onEntryClick={vi.fn()} />);
+    await waitFor(() => expect(screen.getByRole('table')).toHaveClass('history-table'));
+  });
 });

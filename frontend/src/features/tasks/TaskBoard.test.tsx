@@ -2,6 +2,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { TaskHistoryEntry } from '../../types/domain';
 import { TaskBoard } from './TaskBoard';
 
 const apiMock = vi.hoisted(() => ({
@@ -9,7 +10,8 @@ const apiMock = vi.hoisted(() => ({
   updateTaskStatus: vi.fn(),
   createTask: vi.fn(),
   updateTask: vi.fn(),
-  deleteTask: vi.fn()
+  deleteTask: vi.fn(),
+  taskHistory: vi.fn()
 }));
 
 vi.mock('../../api/client', () => ({
@@ -42,6 +44,7 @@ describe('TaskBoard', () => {
   beforeEach(() => {
     apiMock.tasks.mockReset();
     apiMock.updateTaskStatus.mockReset();
+    apiMock.taskHistory.mockReset();
     apiMock.tasks.mockResolvedValue([task]);
     apiMock.updateTaskStatus.mockResolvedValue({ ...task, status: 'done', completed_at: new Date().toISOString() });
   });
@@ -87,5 +90,61 @@ describe('TaskBoard', () => {
 
     expect(apiMock.updateTaskStatus).toHaveBeenCalledWith('task-1', 'done');
     await waitFor(() => expect(onTasksChanged).toHaveBeenCalled());
+  });
+
+  it('clicking a history entry row renders TaskHistoryModal', async () => {
+    const user = userEvent.setup();
+    const historyEntry: TaskHistoryEntry = {
+      id: 'h1',
+      task_id: 'task-1',
+      changed_by_name: 'Demo User',
+      created_at: '2026-05-11T10:00:00Z',
+      fields: [{ field_name: 'Status', old_value: 'To Do', new_value: 'In Progress' }]
+    };
+    apiMock.taskHistory.mockResolvedValue([historyEntry]);
+
+    render(
+      <TaskBoard
+        lists={[selectedList]}
+        selectedList={selectedList}
+        onTasksChanged={vi.fn()}
+      />
+    );
+
+    await screen.findByText('Write tests');
+    await user.click(screen.getByRole('button', { name: /history for write tests/i }));
+    await screen.findByText('Demo User');
+    await user.click(screen.getByText('Demo User'));
+
+    expect(screen.getByTestId('modal-backdrop')).toBeInTheDocument();
+  });
+
+  it('closing the TaskHistoryModal removes it from the DOM', async () => {
+    const user = userEvent.setup();
+    const historyEntry: TaskHistoryEntry = {
+      id: 'h1',
+      task_id: 'task-1',
+      changed_by_name: 'Demo User',
+      created_at: '2026-05-11T10:00:00Z',
+      fields: [{ field_name: 'Status', old_value: 'To Do', new_value: 'In Progress' }]
+    };
+    apiMock.taskHistory.mockResolvedValue([historyEntry]);
+
+    render(
+      <TaskBoard
+        lists={[selectedList]}
+        selectedList={selectedList}
+        onTasksChanged={vi.fn()}
+      />
+    );
+
+    await screen.findByText('Write tests');
+    await user.click(screen.getByRole('button', { name: /history for write tests/i }));
+    await screen.findByText('Demo User');
+    await user.click(screen.getByText('Demo User'));
+    expect(screen.getByTestId('modal-backdrop')).toBeInTheDocument();
+
+    await user.click(screen.getByTestId('modal-backdrop'));
+    expect(screen.queryByTestId('modal-backdrop')).not.toBeInTheDocument();
   });
 });

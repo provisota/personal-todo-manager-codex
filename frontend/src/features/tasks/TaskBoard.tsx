@@ -2,9 +2,10 @@ import { CalendarDays, CheckCircle2, Circle, Clock3, History, Pencil, Plus, Sear
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { api } from '../../api/client';
-import type { DueFilter, ProjectList, Task, TaskFilters, TaskPriority, TaskStatus } from '../../types/domain';
+import type { DueFilter, ProjectList, Task, TaskFilters, TaskHistoryEntry, TaskPriority, TaskStatus } from '../../types/domain';
 import { TaskForm, type TaskFormValue } from './TaskForm';
 import { TaskHistory } from './TaskHistory';
+import { TaskHistoryModal } from './TaskHistoryModal';
 
 interface Props {
   lists: ProjectList[];
@@ -43,6 +44,7 @@ export function TaskBoard({
   const [formTask, setFormTask] = useState<Task | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [historyTask, setHistoryTask] = useState<Task | null>(null);
+  const [selectedHistoryEntry, setSelectedHistoryEntry] = useState<TaskHistoryEntry | null>(null);
 
   const loadTasks = useCallback(async () => {
     if (!selectedList) {
@@ -225,7 +227,7 @@ export function TaskBoard({
             <span className="history-panel-title">History: {historyTask.title}</span>
             <button className="icon-button" type="button" aria-label="Close history" onClick={() => setHistoryTask(null)}>×</button>
           </div>
-          <TaskHistory taskId={historyTask.id} onEntryClick={() => {}} />
+          <TaskHistory taskId={historyTask.id} onEntryClick={(entry) => setSelectedHistoryEntry(entry)} />
         </aside>
       )}
 
@@ -241,6 +243,10 @@ export function TaskBoard({
           onSubmit={saveTask}
         />
       ) : null}
+
+      {selectedHistoryEntry && (
+        <TaskHistoryModal entry={selectedHistoryEntry} onClose={() => setSelectedHistoryEntry(null)} />
+      )}
     </section>
   );
 }
