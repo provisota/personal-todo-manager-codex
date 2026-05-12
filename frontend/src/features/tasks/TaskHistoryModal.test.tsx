@@ -59,4 +59,15 @@ describe('TaskHistoryModal', () => {
     await userEvent.keyboard('{Escape}');
     expect(handleClose).toHaveBeenCalledOnce();
   });
+
+  it('backdrop element has class history-modal-backdrop', () => {
+    render(<TaskHistoryModal entry={entry} onClose={vi.fn()} />);
+    expect(screen.getByTestId('modal-backdrop')).toHaveClass('history-modal-backdrop');
+  });
+
+  it('dialog element has class history-modal', () => {
+    render(<TaskHistoryModal entry={entry} onClose={vi.fn()} />);
+    const backdrop = screen.getByTestId('modal-backdrop');
+    expect(backdrop.querySelector('.history-modal')).not.toBeNull();
+  });
 });

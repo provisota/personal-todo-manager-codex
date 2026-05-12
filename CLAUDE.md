@@ -73,5 +73,5 @@ docker compose exec backend alembic upgrade head
 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the current plan
+shell commands, and other important information, read the current plan at
 <!-- SPECKIT END -->
