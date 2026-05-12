@@ -149,3 +149,8 @@ Backend environment variables are documented in `backend/.env.example`; key valu
 `CORS_ALLOWED_ORIGIN_REGEX`, `WS_NOTIFICATION_INTERVAL_SECONDS`, and OAuth client settings.
 Frontend environment variables are documented in `frontend/.env.example` and currently
 include `VITE_API_BASE_URL` and `VITE_WS_BASE_URL`.
+
+<!-- SPECKIT START -->
+For additional context about technologies to be used, project structure,
+shell commands, and other important information, read the current plan
+<!-- SPECKIT END -->
