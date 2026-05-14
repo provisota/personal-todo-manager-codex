@@ -4,6 +4,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
+### First-time setup
+
+```bash
+# Backend (from backend/)
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e .
+cp .env.example .env       # then fill in SESSION_SECRET and OAuth credentials
+alembic upgrade head
+python scripts/seed.py     # optional demo data
+
+# Frontend (from frontend/)
+npm install
+cp .env.example .env
+```
+
+### Local dev startup order
+
+```bash
+docker compose up -d postgres          # 1. DB
+cd backend && alembic upgrade head     # 2. migrate (first run or after model changes)
+cd backend && uvicorn app.main:app --reload   # 3. API on :8000
+cd frontend && npm run dev             # 4. UI on :5173
+```
+
 ### Backend (run from `backend/` with venv active)
 
 ```bash
@@ -20,9 +44,10 @@ ruff check .                                  # lint (line-length 100)
 ### Frontend (run from `frontend/`)
 
 ```bash
-npm run dev    # dev server on :5173
-npm test       # Vitest (run once)
-npm run build  # tsc + vite build
+npm run dev      # dev server on :5173
+npm test         # Vitest (run once)
+npm run build    # tsc + vite build
+npm run preview  # preview production build
 ```
 
 ### Infrastructure
@@ -31,6 +56,7 @@ npm run build  # tsc + vite build
 docker compose up -d postgres       # just DB for local dev
 docker compose up --build           # full stack
 docker compose exec backend alembic upgrade head
+docker compose exec backend python scripts/seed.py
 ```
 
 ### Pre-commit checklist
@@ -59,15 +85,17 @@ Before every commit: `cd backend && pytest` + `cd frontend && npm test && npm ru
 
 - `api/client.ts` — single typed `api` object; always sends `credentials: 'include'`. Dispatches `auth:expired` custom event on 401.
 - `auth/AuthContext.tsx` — global auth state.
-- `features/` — self-contained UI components per domain (lists, tasks, notifications).
+- `routes/` — top-level app / login / todo route components.
+- `features/` — self-contained UI components per domain (lists, tasks, task history, notifications).
 - `hooks/useNotificationsSocket.ts` — manages WebSocket lifecycle and reconnection.
 - `types/domain.ts` — canonical TypeScript types shared across the app.
+- `test/setup.ts` — Vitest + Testing Library global setup.
 
 **Frontend naming**: components → `PascalCase.tsx`; hooks → `useThing.ts`; tests → `*.test.tsx`. Two-space indentation, single-quote imports.
 
 ## Key conventions
 
-**Testing (backend)**: tests use in-memory SQLite via `conftest.py`. The `client` fixture calls `create_app()` and overrides `get_session` and `get_settings`. `TEST_AUTH_ENABLED=true` is set in test settings to enable `/auth/test-login`. Use the `login()` helper from `conftest.py` to authenticate before resource calls.
+**Testing (backend)**: tests use in-memory SQLite via `conftest.py`. The `client` fixture calls `create_app()` and overrides `get_session` and `get_settings`. `TEST_AUTH_ENABLED=true` is set in test settings to enable `/auth/test-login`. Use the `login()` helper from `conftest.py` to authenticate before resource calls. PostgreSQL-specific integration tests in `tests/test_postgres_integration.py` only run when `POSTGRES_TEST_DATABASE_URL` is set.
 
 **Notification IDs**: formatted as `"{type}:{task_id}"` (e.g., `overdue:550e8400-...`). The `NotificationAck` table persists per-user dismissals; acknowledged notifications are excluded from subsequent WS batches unless `include_acknowledged: true` is sent.
 
@@ -76,6 +104,12 @@ Before every commit: `cd backend && pytest` + `cd frontend && npm test && npm ru
 **Task history**: both `PATCH /api/tasks/{task_id}` and `PATCH /api/tasks/{task_id}/status` snapshot field diffs into `task_history` / `task_history_fields` via `_capture_history` in `services/tasks.py`. Retrieve via `GET /api/tasks/{task_id}/history`.
 
 **Local demo login**: set `TEST_AUTH_ENABLED=true` in `backend/.env` to enable the "Use local demo login" button. Never enable in production.
+
+**Cascade deletion**: deleting a list cascades deletion of all its tasks. The frontend shows a confirmation dialog before the request is sent.
+
+**Task API filters**: `GET /api/tasks?list_id=...&search=...&status=...&priority=...&due=...`. Valid `due` values: `overdue`, `today`, `next_7_days`, `all`.
+
+**WebSocket interval**: clients may change the notification poll interval via a `subscribe` message; valid range is 30–300 seconds.
 
 ## Agents
 
