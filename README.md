@@ -6,7 +6,6 @@
     * [Start PostgreSQL:](#start-postgresql)
     * [Backend:](#backend)
     * [Frontend:](#frontend)
-    * [Open:](#open)
   * [OAuth Configuration](#oauth-configuration)
     * [Google](#google)
     * [GitHub](#github)
@@ -16,6 +15,11 @@
   * [WebSocket](#websocket)
   * [Tests](#tests)
   * [Docker](#docker)
+  * [Spec-Kit](#spec-kit)
+    * [Workflow](#workflow)
+    * [Using Spec-Kit with Claude Code and Codex Together](#using-spec-kit-with-claude-code-and-codex-together)
+    * [Updating Spec-Kit version](#updating-spec-kit-version)
+    * [Using a Custom Feature Branch](#using-a-custom-feature-branch)
 <!-- TOC -->
 
 Full-stack MVP for private personal project/task management. Users sign in with Google or GitHub SSO, manage private lists and tasks, search/filter tasks, and receive WebSocket notifications for overdue and due-soon work.
@@ -255,3 +259,82 @@ docker compose exec backend python scripts/seed.py
 ```
 
 The compose file includes PostgreSQL, backend, and frontend services. Local host development can also run only PostgreSQL in Docker and run backend/frontend directly on the host.
+
+## Spec-Kit
+
+### Workflow
+
+Spec-Kit uses the following eight-step workflow:
+
+| Step | Command                 | Purpose                                                                                                                                                                                                                                                                            |
+|------|-------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1    | `/speckit.constitution` | Defines project principles, including code, testing, and UX standards.                                                                                                                                                                                                             |
+| 2    | `/speckit.specify`      | Describes what to build and why at a high level, without selecting a technology stack.                                                                                                                                                                                             |
+| 3    | `/speckit.clarify`      | **Optional**, but recommended. Resolves unclear requirements before planning.                                                                                                                                                                                                      |
+| 4    | `/speckit.plan`         | Defines the stack and technical details, then produces a technical implementation plan.                                                                                                                                                                                            |
+| 5    | `/speckit.checklist`    | **Optional**. Generates domain-specific quality checklists for areas such as UX, security, and accessibility. It can be run multiple times for different domains and cross-checks the specification and plan. If it finds gaps, update the specification or plan and run it again. |
+| 6    | `/speckit.tasks`        | Breaks the plan into atomic, dependency-ordered tasks.                                                                                                                                                                                                                             |
+| 7    | `/speckit.analyze`      | **Optional**. Checks the specification, plan, and tasks for contradictions, missing requirement coverage, and inconsistencies. Use it as the final quality gate before implementation.                                                                                             |
+| 8    | `/speckit.implement`    | Executes all tasks in dependency order.                                                                                                                                                                                                                                            |
+
+### Using Spec-Kit with Claude Code and Codex Together
+
+If the project has not been initialized yet, initialize it with the Claude Code
+integration:
+
+```bash
+specify init . --integration claude --script sh
+```
+
+Then install the Codex integration:
+
+```bash
+specify integration install codex --script sh
+```
+
+Switch between integrations:
+
+```bash
+specify integration use codex
+# or
+specify integration use claude
+```
+
+List all available and installed integrations:
+
+```bash
+specify integration list
+```
+
+### Updating Spec-Kit version
+
+Check the installed version:
+
+```bash
+specify --version
+```
+
+Update Spec-Kit:
+
+```bash
+uv tool install specify-cli --force --from git+https://github.com/github/spec-kit.git
+```
+
+Then update the generated files in the project:
+
+```bash
+specify init . --integration claude --force
+```
+
+> **Warning:** `--force` overwrites `.claude/`, `.specify/templates/`, and other
+> generated files. Before upgrading, back up `constitution.md` if you have
+> customized it; otherwise, your changes may be overwritten.
+
+### Using a Custom Feature Branch
+
+To pass a custom feature branch, for example
+`PX-0003-bootstrap-worker-node-project`, use `speckit-specify` with these parameters:
+
+```text
+/speckit-specify SPECIFY_FEATURE_DIRECTORY="specs/PX-0003-bootstrap-worker-node-project" GIT_BRANCH_NAME="PX-0003-bootstrap-worker-node-project"
+```
